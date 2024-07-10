@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -43,29 +44,33 @@ public class Menu extends VBox {
 
         Button modifyButton = createMenuButton("Modify Student");
         modifyButton.setOnAction(e -> {
-            for (Student student : students) {
-                System.out.println(student.getFirstName());
-                System.out.println(student.getLastName());
-                System.out.println();
-            }
+            System.out.println("modify");
         });
         this.getChildren().add(modifyButton);
 
         Button deleteButton = createMenuButton("Delete Student");
         deleteButton.setOnAction(e -> {
-            System.out.println("ascii cesar");
+            System.out.println("delete");
         });
         this.getChildren().add(deleteButton);
 
         Button displayButton = createMenuButton("Display Students");
         displayButton.setOnAction(e -> {
-            System.out.println("display");
+            if (students.size() > 0){
+                Display displayScreen = new Display((Stage) this.getScene().getWindow(), this, this.students);
+                displayScreen.show((Stage) this.getScene().getWindow());
+            }
+            else{
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText("No students yet");
+                alert.showAndWait();
+            }
         });
         this.getChildren().add(displayButton);
 
         Button searchButton = createMenuButton("Search Student");
         searchButton.setOnAction(e -> {
-            System.out.println("display");
+            System.out.println("search");
         });
         this.getChildren().add(searchButton);
 

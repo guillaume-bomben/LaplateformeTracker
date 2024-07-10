@@ -17,14 +17,21 @@ import javafx.stage.Stage;
 public class Add extends VBox {
     private Stage primaryStage;
 
-    public static final ObservableList names = FXCollections.observableArrayList();
     public static final ObservableList data = FXCollections.observableArrayList();
     private ArrayList<Integer> grades = new ArrayList<>();
-    private Menu menu;
+    private Menu menu;                          // menu only until SQL
+    private String id;
+    private String fName;
+    private String lName;
+    private String age;
 
-    public Add(Stage primaryStage, Menu menu) {
+    public Add(Stage primaryStage, Menu menu) { // menu only until SQL
         this.menu = menu;
         this.primaryStage = primaryStage;
+        this.id = "1234";
+        this.fName = "John";
+        this.lName = "Cena";
+        this.age = "47";
         this.grades = new ArrayList<>();
         this.display();
     }
@@ -37,33 +44,45 @@ public class Add extends VBox {
         idLabel.setStyle("-fx-font-size: 14px;");
         mainBox.getChildren().add(idLabel);
 
-        TextField idText = new TextField("1234");
+        TextField idText = new TextField(id);
         idText.setPrefWidth(200); // Adjusted width of text field
         mainBox.getChildren().add(idText);
+        idText.textProperty().addListener((observable, oldValue, newValue) -> {
+            id = newValue;
+        });
 
         Label fNameLabel = new Label("First Name :");
         fNameLabel.setStyle("-fx-font-size: 14px;");
         mainBox.getChildren().add(fNameLabel);
 
-        TextField fNameText = new TextField("John");
+        TextField fNameText = new TextField(fName);
         fNameText.setPrefWidth(200); // Adjusted width of text field
         mainBox.getChildren().add(fNameText);
+        fNameText.textProperty().addListener((observable, oldValue, newValue) -> {
+            fName = newValue;
+        });
 
         Label lNameLabel = new Label("Last Name :");
         lNameLabel.setStyle("-fx-font-size: 14px;");
         mainBox.getChildren().add(lNameLabel);
 
-        TextField lNameText = new TextField("Cena");
+        TextField lNameText = new TextField(lName);
         lNameText.setPrefWidth(200); // Adjusted width of text field
         mainBox.getChildren().add(lNameText);
+        lNameText.textProperty().addListener((observable, oldValue, newValue) -> {
+            lName = newValue;
+        });
 
         Label ageLabel = new Label("Age :");
         ageLabel.setStyle("-fx-font-size: 14px;");
         mainBox.getChildren().add(ageLabel);
 
-        TextField ageText = new TextField("47");
+        TextField ageText = new TextField(age);
         ageText.setPrefWidth(200); // Adjusted width of text field
         mainBox.getChildren().add(ageText);
+        ageText.textProperty().addListener((observable, oldValue, newValue) -> {
+            age = newValue;
+        });
 
         Label gradeLabel = new Label("Grades :");
         gradeLabel.setStyle("-fx-font-size: 14px;");
@@ -114,12 +133,12 @@ public class Add extends VBox {
         Scene scene = new Scene(this, 400, 500); // Ajuster la taille de la scène pour une meilleure présentation
         primaryStage.setResizable(false);
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Main Menu");
+        primaryStage.setTitle("Add Student");
         primaryStage.show();
     }
 
     public void addStudent(){
-        //SQL
+        //TODO: SQL
     }
     
     private void gradeWindow(Add add){
