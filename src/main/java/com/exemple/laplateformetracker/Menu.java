@@ -70,7 +70,8 @@ public class Menu extends VBox {
 
         Button searchButton = createMenuButton("Search Student");
         searchButton.setOnAction(e -> {
-            System.out.println("search");
+            Search searchScreen = new Search((Stage) this.getScene().getWindow(), this, this.students);
+            searchScreen.show((Stage) this.getScene().getWindow());
         });
         this.getChildren().add(searchButton);
 
