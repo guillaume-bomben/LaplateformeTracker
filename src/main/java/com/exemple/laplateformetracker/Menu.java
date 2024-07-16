@@ -44,13 +44,15 @@ public class Menu extends VBox {
 
         Button modifyButton = createMenuButton("Modify Student");
         modifyButton.setOnAction(e -> {
-            System.out.println("modify");
+            GetStudentScreen modifyScreen = new GetStudentScreen((Stage) this.getScene().getWindow(), this, true);
+            modifyScreen.show((Stage) this.getScene().getWindow());
         });
         this.getChildren().add(modifyButton);
 
         Button deleteButton = createMenuButton("Delete Student");
         deleteButton.setOnAction(e -> {
-            System.out.println("delete");
+            GetStudentScreen modifyScreen = new GetStudentScreen((Stage) this.getScene().getWindow(), this, false);
+            modifyScreen.show((Stage) this.getScene().getWindow());
         });
         this.getChildren().add(deleteButton);
 
