@@ -7,7 +7,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -15,25 +14,29 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class Add extends VBox {
+public class Modify extends VBox {
     private Stage primaryStage;
 
     public static final ObservableList data = FXCollections.observableArrayList();
     private ArrayList<Integer> grades = new ArrayList<>();
     private Menu menu;                          // menu only until SQL
-    private String id;
+    private int id;
     private String fName;
     private String lName;
     private String age;
 
-    public Add(Stage primaryStage, Menu menu) { // menu only until SQL
+    public Modify(Stage primaryStage, Menu menu, int id) { // menu only until SQL
         this.menu = menu;
         this.primaryStage = primaryStage;
-        this.id = "1234";
-        this.fName = "John";
-        this.lName = "Cena";
-        this.age = "47";
-        this.grades = new ArrayList<>();
+        this.id = id;
+        for (Student student : menu.students) {
+            if (id == student.getId()){
+                this.fName = student.getFirstName();
+                this.lName = student.getLastName();
+                this.age = student.getAge() + "";
+                this.grades = student.getGrades();
+            }
+        }
         this.display();
     }
 
@@ -45,11 +48,11 @@ public class Add extends VBox {
         idLabel.setStyle("-fx-font-size: 14px;");
         mainBox.getChildren().add(idLabel);
 
-        TextField idText = new TextField(id);
+        TextField idText = new TextField(id + "");
         idText.setPrefWidth(200); // Adjusted width of text field
         mainBox.getChildren().add(idText);
         idText.textProperty().addListener((observable, oldValue, newValue) -> {
-            id = newValue;
+            id = Integer.parseInt(newValue);
         });
 
         Label fNameLabel = new Label("First Name :");
@@ -115,21 +118,22 @@ public class Add extends VBox {
         });
         mainBox.getChildren().add(plusButton);
 
-        Button backButton = createMenuButton("Add Student");
+        Button backButton = createMenuButton("Modify Student");
         backButton.setMaxSize(75, 5);
         backButton.setOnAction(e -> {
-            if (grades.size() > 0){
-                Student s = new Student(Integer.valueOf(idText.getText()), fNameText.getText(), lNameText.getText(), Integer.valueOf(ageText.getText()), grades);
-                Menu menu = new Menu(this.menu); // until SQL
-                menu.students.add(s);            // until SQL
-                menu.show(primaryStage);
-                primaryStage.setScene(menu.getScene());
-            }
-            else{
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("No grades yet");
-                alert.showAndWait();
-            }
+            Student s = new Student(Integer.valueOf(idText.getText()), fNameText.getText(), lNameText.getText(), Integer.valueOf(ageText.getText()), grades);
+            Menu menu = new Menu(this.menu); // until SQL
+            for (Student student : menu.students) {
+                if (student.getId() == this.id) {
+                    student.setId(s.getId());
+                    student.setFirstName(s.getFirstName());
+                    student.setLastName(s.getLastName());
+                    student.setAge(s.getAge());
+                    student.setGrades(s.getGrades());
+                }
+            }            // until SQL
+            menu.show(primaryStage);
+            primaryStage.setScene(menu.getScene());
         });
         mainBox.getChildren().add(backButton);
 
@@ -148,7 +152,7 @@ public class Add extends VBox {
         Scene scene = new Scene(this, 400, 500); // Ajuster la taille de la scène pour une meilleure présentation
         primaryStage.setResizable(false);
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Add Student");
+        primaryStage.setTitle("Modify Student");
         primaryStage.show();
     }
 
@@ -156,7 +160,7 @@ public class Add extends VBox {
         //TODO: SQL
     }
     
-    private void gradeWindow(Add add, boolean addGrade){
+    private void gradeWindow(Modify modify, boolean addGrade){
         if (addGrade) {
             Stage newWindow = new Stage();
             newWindow.setTitle("New Scene");
@@ -179,8 +183,8 @@ public class Add extends VBox {
             backButton.setOnAction(e -> {
                 grades.add(Integer.parseInt(gradeText.getText()));
                 newWindow.close();
-                add.getChildren().clear();
-                add.display();
+                modify.getChildren().clear();
+                modify.display();
             });
             container.getChildren().add(backButton);
 
@@ -189,8 +193,8 @@ public class Add extends VBox {
         }
         else{
             grades.remove(grades.size()-1);
-            add.getChildren().clear();
-            add.display();
+            modify.getChildren().clear();
+            modify.display();
         }
     }
 }
