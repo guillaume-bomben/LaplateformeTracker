@@ -155,7 +155,7 @@ public class Add extends VBox {
     }
 
     public void addStudent() throws SQLException {
-
+        
         String sql_check = "SELECT ID FROM parents WHERE first_name = ? AND last_name = ? AND age = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql_check)) {
             statement.setString(1, fName);
@@ -168,11 +168,14 @@ public class Add extends VBox {
         }
 
         if (ID_student == 0){
-            String sql = "INSERT INTO parents (first_name, last_name, age) VALUES (?, ?, ?)";
+            String user_name = fName + lName;
+            String sql = "INSERT INTO parents (first_name, last_name, age, MP, user_name) VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, fName);
                 statement.setString(2, lName);
                 statement.setInt(3, Integer.parseInt(age));
+                statement.setString(4, "1234");
+                statement.setString(5, user_name);
                 statement.executeUpdate();
             }
         
