@@ -1,5 +1,6 @@
 package com.exemple.laplateformetracker;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 
 import javafx.collections.FXCollections;
@@ -14,23 +15,27 @@ import javafx.stage.Stage;
 
 public class Display extends VBox {
     private Stage primaryStage;
-
-    public static final ObservableList data = FXCollections.observableArrayList();
-    private ArrayList<Student> students = new ArrayList<>();
-    private Menu menu;                          // menu only until SQL
+    private Connection connection;
+    private ArrayList<Student> students;
+    private Menu menu;
     private Student selectedStudent;
     private int selectedIndex;
 
-    public Display(Stage primaryStage, Menu menu, ArrayList<Student> students) { // menu only until SQL
-        this.menu = menu;
+    public static final ObservableList<Integer> data = FXCollections.observableArrayList();
+
+    public Display(Stage primaryStage, Menu menu, ArrayList<Student> students, Connection connection) {
         this.primaryStage = primaryStage;
+        this.menu = menu;
         this.students = students;
-        data.clear();
-        for (int i = 0; i < students.size(); i++) {
-            data.add(students.get(i).getId());
-        }
-        this.selectedStudent = students.get(0);
+        this.connection = connection;
+        this.selectedStudent = students.size() > 0 ? students.get(0) : null;
         this.selectedIndex = 0;
+
+        data.clear();
+        for (Student student : students) {
+            data.add(student.getId());
+        }
+
         this.display();
     }
 
@@ -38,7 +43,7 @@ public class Display extends VBox {
         VBox mainBox = new VBox(10); // Horizontal box for input components
         mainBox.setPadding(new Insets(10)); // Padding around the main VBox
 
-        ListView listView = new ListView(data);
+        ListView<Integer> listView = new ListView<>(data);
         listView.setMaxSize(100, 500);
         listView.setEditable(true);
         listView.getSelectionModel().select(selectedIndex);
@@ -46,56 +51,64 @@ public class Display extends VBox {
         listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> onSelected(listView));
         this.getChildren().add(listView);
 
-        Label idLabel = new Label("ID Number :");
-        idLabel.setStyle("-fx-font-size: 14px;");
-        mainBox.getChildren().add(idLabel);
+        if (selectedStudent != null) {
+            Label idLabel = new Label("ID Number :");
+            idLabel.setStyle("-fx-font-size: 14px;");
+            mainBox.getChildren().add(idLabel);
 
-        Label idText = new Label(selectedStudent.getId() + "");
-        idText.setPrefWidth(200); // Adjusted width of text field
-        mainBox.getChildren().add(idText);
+            Label idText = new Label(String.valueOf(selectedStudent.getId()));
+            idText.setPrefWidth(200);
+            mainBox.getChildren().add(idText);
 
-        Label fNameLabel = new Label("First Name :");
-        fNameLabel.setStyle("-fx-font-size: 14px;");
-        mainBox.getChildren().add(fNameLabel);
+            Label fNameLabel = new Label("First Name :");
+            fNameLabel.setStyle("-fx-font-size: 14px;");
+            mainBox.getChildren().add(fNameLabel);
 
-        Label fNameText = new Label(selectedStudent.getFirstName());
-        fNameText.setPrefWidth(200); // Adjusted width of text field
-        mainBox.getChildren().add(fNameText);
+            Label fNameText = new Label(selectedStudent.getFirstName());
+            fNameText.setPrefWidth(200);
+            mainBox.getChildren().add(fNameText);
 
-        Label lNameLabel = new Label("Last Name :");
-        lNameLabel.setStyle("-fx-font-size: 14px;");
-        mainBox.getChildren().add(lNameLabel);
+            Label lNameLabel = new Label("Last Name :");
+            lNameLabel.setStyle("-fx-font-size: 14px;");
+            mainBox.getChildren().add(lNameLabel);
 
-        Label lNameText = new Label(selectedStudent.getLastName());
-        lNameText.setPrefWidth(200); // Adjusted width of text field
-        mainBox.getChildren().add(lNameText);
+            Label lNameText = new Label(selectedStudent.getLastName());
+            lNameText.setPrefWidth(200);
+            mainBox.getChildren().add(lNameText);
 
-        Label ageLabel = new Label("Age :");
-        ageLabel.setStyle("-fx-font-size: 14px;");
-        mainBox.getChildren().add(ageLabel);
+            Label ageLabel = new Label("Age :");
+            ageLabel.setStyle("-fx-font-size: 14px;");
+            mainBox.getChildren().add(ageLabel);
 
-        Label ageText = new Label(selectedStudent.getAge() + "");
-        ageText.setPrefWidth(200); // Adjusted width of text field
-        mainBox.getChildren().add(ageText);
+            Label ageText = new Label(String.valueOf(selectedStudent.getAge()));
+            ageText.setPrefWidth(200);
+            mainBox.getChildren().add(ageText);
 
-        Label gradesLabel = new Label("Grades :");
-        gradesLabel.setStyle("-fx-font-size: 14px;");
-        mainBox.getChildren().add(gradesLabel);
+            Label gradesLabel = new Label("Grades :");
+            gradesLabel.setStyle("-fx-font-size: 14px;");
+            mainBox.getChildren().add(gradesLabel);
 
-        String gradeText = "";
-        for (int i = 0; i < selectedStudent.getGrades().size()-1; i++) {
-            gradeText += selectedStudent.getGrades().get(i) + ", ";
+            StringBuilder gradeText = new StringBuilder();
+            for (int i = 0; i < selectedStudent.getGrades().size(); i++) {
+                gradeText.append(selectedStudent.getGrades().get(i));
+                if (i < selectedStudent.getGrades().size() - 1) {
+                    gradeText.append(", ");
+                }
+            }
+
+            Label gradeLabel = new Label(gradeText.toString());
+            gradeLabel.setStyle("-fx-font-size: 14px;");
+            mainBox.getChildren().add(gradeLabel);
+        } else {
+            Label noStudentLabel = new Label("No student selected");
+            noStudentLabel.setStyle("-fx-font-size: 14px;");
+            mainBox.getChildren().add(noStudentLabel);
         }
-        gradeText += selectedStudent.getGrades().get(selectedStudent.getGrades().size()-1);
-
-        Label gradeLabel = new Label(gradeText);
-        gradeLabel.setStyle("-fx-font-size: 14px;");
-        mainBox.getChildren().add(gradeLabel);
 
         Button backButton = createMenuButton("Back");
         backButton.setMaxSize(75, 5);
         backButton.setOnAction(e -> {
-            Menu menu = new Menu(this.menu); // until SQL
+            Menu menu = new Menu(this.menu, connection);
             menu.show(primaryStage);
             primaryStage.setScene(menu.getScene());
         });
@@ -106,26 +119,27 @@ public class Display extends VBox {
 
     private Button createMenuButton(String text) {
         Button button = new Button(text);
-        button.setPrefWidth(200); // Largeur fixe pour les boutons
-        button.setPrefHeight(40); // Hauteur fixe pour les boutons
+        button.setPrefWidth(200);
+        button.setPrefHeight(40);
         button.setStyle("-fx-font-size: 14px;");
         return button;
     }
 
     public void show(Stage primaryStage) {
-        Scene scene = new Scene(this, 700, 600); // Ajuster la taille de la scène pour une meilleure présentation
+        Scene scene = new Scene(this, 700, 600);
         primaryStage.setResizable(false);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Display Student");
         primaryStage.show();
     }
 
-    private void onSelected(ListView listView){
-        int id = (int)listView.getSelectionModel().getSelectedItem();
+    private void onSelected(ListView<Integer> listView) {
+        int id = listView.getSelectionModel().getSelectedItem();
         for (int i = 0; i < students.size(); i++) {
-            if (students.get(i).getId() == id){
+            if (students.get(i).getId() == id) {
                 selectedStudent = students.get(i);
                 selectedIndex = i;
+                break;
             }
         }
 

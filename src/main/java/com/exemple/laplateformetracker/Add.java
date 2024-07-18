@@ -1,7 +1,10 @@
 package com.exemple.laplateformetracker;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -17,19 +20,21 @@ import javafx.stage.Stage;
 
 public class Add extends VBox {
     private Stage primaryStage;
+    private Connection connection;
 
-    public static final ObservableList data = FXCollections.observableArrayList();
+    public static final ObservableList<Integer> data = FXCollections.observableArrayList();
     private ArrayList<Integer> grades = new ArrayList<>();
-    private Menu menu;                          // menu only until SQL
-    private String id;
+    private Menu menu;
     private String fName;
     private String lName;
     private String age;
+    private int ID_student = 0;
 
-    public Add(Stage primaryStage, Menu menu) { // menu only until SQL
+
+    public Add(Stage primaryStage, Menu menu, Connection connection) {
         this.menu = menu;
         this.primaryStage = primaryStage;
-        this.id = "1234";
+        this.connection = connection;
         this.fName = "John";
         this.lName = "Cena";
         this.age = "47";
@@ -40,17 +45,6 @@ public class Add extends VBox {
     public void display() {
         VBox mainBox = new VBox(10); // Horizontal box for input components
         mainBox.setPadding(new Insets(10)); // Padding around the main VBox
-
-        Label idLabel = new Label("ID Number :");
-        idLabel.setStyle("-fx-font-size: 14px;");
-        mainBox.getChildren().add(idLabel);
-
-        TextField idText = new TextField(id);
-        idText.setPrefWidth(200); // Adjusted width of text field
-        mainBox.getChildren().add(idText);
-        idText.textProperty().addListener((observable, oldValue, newValue) -> {
-            id = newValue;
-        });
 
         Label fNameLabel = new Label("First Name :");
         fNameLabel.setStyle("-fx-font-size: 14px;");
@@ -89,15 +83,13 @@ public class Add extends VBox {
         gradeLabel.setStyle("-fx-font-size: 14px;");
         mainBox.getChildren().add(gradeLabel);
 
-        ListView listView = new ListView(data);
+        ListView<Integer> listView = new ListView<>(data);
         listView.setPrefSize(200, 250);
         listView.setEditable(true);
-        
+
         data.clear();
-        for (int i = 0; i < grades.size(); i++) {
-            data.add(grades.get(i));
-        }
-          
+        data.addAll(grades);
+
         listView.setItems(data);
         mainBox.getChildren().add(listView);
 
@@ -118,14 +110,24 @@ public class Add extends VBox {
         Button backButton = createMenuButton("Add Student");
         backButton.setMaxSize(75, 5);
         backButton.setOnAction(e -> {
-            if (grades.size() > 0){
-                Student s = new Student(Integer.valueOf(idText.getText()), fNameText.getText(), lNameText.getText(), Integer.valueOf(ageText.getText()), grades);
-                Menu menu = new Menu(this.menu); // until SQL
-                menu.students.add(s);            // until SQL
-                menu.show(primaryStage);
-                primaryStage.setScene(menu.getScene());
-            }
-            else{
+            if (grades.size() > 0) {
+                try {
+                    addStudent();
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setContentText("Student added successfully");
+                    alert.showAndWait();
+
+                    Menu menu = new Menu(this.menu, connection);
+                    menu.students.add(new Student(ID_student, fName, lName, Integer.parseInt(age), grades));
+                    menu.show(primaryStage);
+                    primaryStage.setScene(menu.getScene());
+                } catch (SQLException ex) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setContentText("Error adding student to the database: " + ex.getMessage());
+                    alert.showAndWait();
+                    ex.printStackTrace();
+                }
+            } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setContentText("No grades yet");
                 alert.showAndWait();
@@ -152,15 +154,56 @@ public class Add extends VBox {
         primaryStage.show();
     }
 
-    public void addStudent(){
-        //TODO: SQL
+    public void addStudent() throws SQLException {
+
+        String sql_check = "SELECT ID FROM parents WHERE first_name = ? AND last_name = ? AND age = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql_check)) {
+            statement.setString(1, fName);
+            statement.setString(2, lName);
+            statement.setInt(3, Integer.parseInt(age));
+            ResultSet result = statement.executeQuery();
+            if (result.next()) {
+                ID_student = result.getInt("ID");
+            }
+        }
+
+        if (ID_student == 0){
+            String sql = "INSERT INTO parents (first_name, last_name, age) VALUES (?, ?, ?)";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, fName);
+                statement.setString(2, lName);
+                statement.setInt(3, Integer.parseInt(age));
+                statement.executeUpdate();
+            }
+        
+            String sql_id = "SELECT ID FROM parents WHERE first_name = ? AND last_name = ? AND age = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql_id)) {
+                statement.setString(1, fName);
+                statement.setString(2, lName);
+                statement.setInt(3, Integer.parseInt(age));
+                ResultSet result = statement.executeQuery();
+                if (result.next()) {
+                    ID_student = result.getInt("ID");
+                }
+            }
+        
+            for (int grade : grades) {
+                String gradeSql = "INSERT INTO enfants (ID_student, grade) VALUES (?, ?)";
+                try (PreparedStatement gradeStatement = connection.prepareStatement(gradeSql)) {
+                    gradeStatement.setInt(1, ID_student);
+                    gradeStatement.setInt(2, grade);
+                    gradeStatement.executeUpdate();
+                }
+            }
+        }
     }
     
-    private void gradeWindow(Add add, boolean addGrade){
+
+    private void gradeWindow(Add add, boolean addGrade) {
         if (addGrade) {
             Stage newWindow = new Stage();
             newWindow.setTitle("New Scene");
-            
+
             VBox container = new VBox();
             container.setSpacing(15);
             container.setPadding(new Insets(25));
@@ -186,9 +229,8 @@ public class Add extends VBox {
 
             newWindow.setScene(new Scene(container));
             newWindow.show();
-        }
-        else{
-            grades.remove(grades.size()-1);
+        } else {
+            grades.remove(grades.size() - 1);
             add.getChildren().clear();
             add.display();
         }

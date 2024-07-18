@@ -1,5 +1,8 @@
 package com.exemple.laplateformetracker;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import javafx.collections.FXCollections;
@@ -21,67 +24,97 @@ public class GetStudentScreen extends VBox {
     private Menu menu;                          // menu only until SQL
     private String id;
     private boolean modify;
+    private Connection connection;
 
-    public GetStudentScreen(Stage primaryStage, Menu menu, boolean modify) { // menu only until SQL
+
+    public GetStudentScreen(Stage primaryStage, Menu menu, boolean modify, Connection connection) { // menu only until SQL
         this.menu = menu;
         this.primaryStage = primaryStage;
         this.id = "1234";
         this.modify = modify;
+        this.connection = connection;
         this.display();
     }
 
-    public void display() {
-        VBox mainBox = new VBox(10); // Horizontal box for input components
-        mainBox.setPadding(new Insets(10)); // Padding around the main VBox
+public void display() {
+    VBox mainBox = new VBox(10);
+    mainBox.setPadding(new Insets(10));
 
-        if (modify){
-            Label idLabel = new Label("Enter ID to modify :");
-            idLabel.setStyle("-fx-font-size: 14px;");
-            mainBox.getChildren().add(idLabel);
-        }
-        else{
-            Label idLabel = new Label("Enter ID to delete :");
-            idLabel.setStyle("-fx-font-size: 14px;");
-            mainBox.getChildren().add(idLabel);
-        }
-
-        TextField idText = new TextField(id);
-        idText.setPrefWidth(200); // Adjusted width of text field
-        mainBox.getChildren().add(idText);
-        idText.textProperty().addListener((observable, oldValue, newValue) -> {
-            id = newValue;
-        });
-
-        String text = "";
-        if (modify){
-            text = "Modify";
-        }
-        else{
-            text = "Delete";
-        }
-        Button backButton = createMenuButton(text);
-        backButton.setMaxSize(75, 5);
-        backButton.setOnAction(e -> {
-            if (modify){
-                Modify modify = new Modify(primaryStage, menu, Integer.parseInt(id));
-                modify.show(primaryStage);
-                primaryStage.setScene(modify.getScene());
-            }
-            else{
-                for (int i = 0; i < menu.students.size(); i++) {
-                    if (menu.students.get(i).getId() == Integer.parseInt(id)) {
-                        menu.students.remove(i);
-                    }
-                }
-                Menu menu = new Menu(this.menu);
-                menu.show(primaryStage);
-                primaryStage.setScene(menu.getScene());
-            }
-        });
-        mainBox.getChildren().add(backButton);
-
-        this.getChildren().add(mainBox);
+    Label idLabel;
+    if (modify) {
+        idLabel = new Label("Enter ID to modify:");
+    } else {
+        idLabel = new Label("Enter ID to delete:");
     }
+    idLabel.setStyle("-fx-font-size: 14px;");
+    mainBox.getChildren().add(idLabel);
+
+    TextField idText = new TextField(id);
+    idText.setPrefWidth(200);
+    mainBox.getChildren().add(idText);
+    idText.textProperty().addListener((observable, oldValue, newValue) -> {
+        id = newValue;
+    });
+
+    String buttonText = modify ? "Modify" : "Delete";
+    Button actionButton = createMenuButton(buttonText);
+    actionButton.setMaxSize(75, 5);
+    actionButton.setOnAction(e -> {
+        if (modify) {
+            Modify modify = new Modify(primaryStage, menu, Integer.parseInt(id), connection);
+            modify.show(primaryStage);
+            primaryStage.setScene(modify.getScene());
+        } else {
+            // Delete student from database
+            String deleteStudentQuery = "DELETE FROM parents WHERE ID = ?";
+            String deleteGradesQuery = "DELETE FROM enfants WHERE ID_student = ?";
+            
+            try {
+                connection.setAutoCommit(false); // Start transaction
+
+                // Delete from enfants table
+                try (PreparedStatement deleteGradesPstmt = connection.prepareStatement(deleteGradesQuery)) {
+                    deleteGradesPstmt.setInt(1, Integer.parseInt(id));
+                    int gradesDeleted = deleteGradesPstmt.executeUpdate();
+                    System.out.println("Deleted grades: " + gradesDeleted);
+                }
+
+                // Delete from parents table
+                try (PreparedStatement deleteStudentPstmt = connection.prepareStatement(deleteStudentQuery)) {
+                    deleteStudentPstmt.setInt(1, Integer.parseInt(id));
+                    int studentDeleted = deleteStudentPstmt.executeUpdate();
+                    System.out.println("Deleted student: " + studentDeleted);
+                }
+
+                connection.commit(); // Commit transaction
+                System.out.println("Transaction committed successfully.");
+            } catch (SQLException ex) {
+                try {
+                    connection.rollback(); // Rollback transaction in case of error
+                    System.out.println("Transaction rolled back due to error.");
+                } catch (SQLException rollbackEx) {
+                    rollbackEx.printStackTrace();
+                }
+                ex.printStackTrace();
+            } finally {
+                try {
+                    connection.setAutoCommit(true); // Restore auto-commit mode
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            // Show menu after deletion
+            Menu menu = new Menu(this.menu, connection);
+            menu.show(primaryStage);
+            primaryStage.setScene(menu.getScene());
+        }
+    });
+    mainBox.getChildren().add(actionButton);
+
+    this.getChildren().add(mainBox);
+}
+
 
     private Button createMenuButton(String text) {
         Button button = new Button(text);
